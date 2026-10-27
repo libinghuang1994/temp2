@@ -1,6 +1,14 @@
 name: Build Qwen35 CPU development image
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/qwen35-cpu-dev.yml
+      - docker/qwen35-cpu-dev/Dockerfile
+      - docker/qwen35-cpu-dev/apt-packages.txt
+      - docker/qwen35-cpu-dev/verify-dev-env.sh
+      - docker/qwen35-cpu-dev/.dockerignore
   workflow_dispatch:
     inputs:
       version:
@@ -30,7 +38,7 @@ jobs:
       - name: Build and verify
         id: build
         env:
-          IMAGE_VERSION: ${{ inputs.version }}
+          IMAGE_VERSION: ${{ inputs.version || '0.1.0' }}
           IMAGE_OWNER: ${{ github.repository_owner }}
         shell: bash
         run: |

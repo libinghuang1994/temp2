@@ -61,7 +61,9 @@ docker build --platform linux/amd64 \
   docker/qwen35-cpu-dev
 ```
 
-GitHub Actions 的 `Build Qwen35 CPU development image` 工作流只由手动触发。
+GitHub Actions 的 `Build Qwen35 CPU development image` 工作流可手动触发，
+也会在 `main` 分支的 Dockerfile、依赖清单、验证脚本、构建上下文规则或工作流自身发生变化时触发。
+推送触发默认发布 `0.1.0`，手动触发可指定版本；后续正式更新时应同时调整默认版本。
 它在 `ubuntu-22.04` runner 构建 amd64 镜像，通过独立的离线容器验证后，
 使用工作流临时令牌的 `packages: write` 权限发布至当前仓库所属账号的 GHCR。
 工作流上传包版本清单、镜像信息和发布日志作为构建记录。
