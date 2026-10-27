@@ -1,0 +1,81 @@
+name: Build Qwen35 CPU development image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Image version tag
+        required: true
+        default: 0.1.0
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qwen35-cpu-dev-publish
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Build and verify
+        id: build
+        env:
+          IMAGE_VERSION: ${{ inputs.version }}
+          IMAGE_OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          image="ghcr.io/${IMAGE_OWNER,,}/qwen35-cpu-dev:${IMAGE_VERSION}"
+          docker build --platform linux/amd64 \
+            --build-arg "IMAGE_VERSION=$IMAGE_VERSION" \
+            --build-arg "VCS_REF=$GITHUB_SHA" \
+            --build-arg "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --tag "$image" docker/qwen35-cpu-dev
+          docker run --rm --network none "$image" verify-dev-env
+          docker image inspect "$image" --format '{{json .}}' > image-info.json
+          docker run --rm --network none "$image" \
+            cat /usr/local/share/qwen35-cpu-dev/packages.tsv > packages.tsv
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_OWNER: ${{ github.repository_owner }}
+          IMAGE: ${{ steps.build.outputs.image }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker_config_dir=$(mktemp -d)
+          export DOCKER_CONFIG="$docker_config_dir"
+          trap 'rm -rf -- "$docker_config_dir"' EXIT
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$IMAGE_OWNER" --password-stdin
+          docker push "$IMAGE" 2>&1 | tee publish.log
+          {
+            echo "Image: \`$IMAGE\`"
+            echo
+            echo '```text'
+            tail -n 2 publish.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build records
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: qwen35-cpu-dev-build-records
+          path: |
+            image-info.json
+            packages.tsv
+            publish.log
+          if-no-files-found: ignore
