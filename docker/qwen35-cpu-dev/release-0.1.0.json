@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "image": "ghcr.io/libinghuang1994/qwen35-cpu-dev:0.1.0",
+  "manifest_digest": "sha256:2ef869c7ad4e4113e55d3cfaf9500de4a1d7b0c2553924b342e5623496108f4d",
+  "config_digest": "sha256:c67ab79b55d298bcc5733a00ce39247f27495724936cb3f9724340ff4592f6d6",
+  "platform": "linux/amd64",
+  "source_repository": "https://github.com/libinghuang1994/temp2",
+  "source_revision": "fa013baff3d2f279e3a1000ffb8cf4194f6a9fb4",
+  "workflow_run": "https://github.com/libinghuang1994/temp2/actions/runs/40472090532",
+  "workflow_conclusion": "success",
+  "job_completed_at": "2026-10-27T08:15:05Z",
+  "base_image": "ubuntu:22.04@sha256:e0f80c829509ef4df9e76bd8944eb7b8ec25cbb379b112a7f9448b2c77a77c9b",
+  "cmake_archive_sha256": "5a1133ff103c71eb5120e2cc3de922733e7d8a26a98ae716397e8676adb367bf",
+  "compressed_layers_and_config_bytes": 300746659,
+  "uncompressed_image_bytes_from_runner": 822786763,
+  "toolchain": {
+    "gcc": "12.3.0",
+    "g++": "12.3.0",
+    "cmake": "3.31.6",
+    "python": "3.10.12",
+    "ninja": "1.10.1",
+    "glibc": "2.35"
+  },
+  "checks": {
+    "local_docker_build": "passed",
+    "local_offline_container_verification": "passed",
+    "github_actions_build_and_verification": "passed",
+    "ghcr_push": "passed",
+    "anonymous_pull_by_digest": "passed",
+    "cpp17_openmp_openssl_libcurl_runtime": "passed",
+    "avx512_vnni_intrinsics_compilation": "passed",
+    "amx_tile_int8_bf16_intrinsics_compilation": "passed",
+    "target_server_amx_execution": "not_verified",
+    "llama_cpp_build": "not_performed",
+    "model_and_api": "not_performed"
+  },
+  "verification_date": "2026-10-27"
+}

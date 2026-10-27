@@ -17,14 +17,24 @@
 
 ## 内网使用
 
-计划发布地址：`ghcr.io/libinghuang1994/qwen35-cpu-dev:0.1.0`。
-须以实际发布记录确认可用性。GHCR 的新包默认私有；私有包需先运行 `docker login ghcr.io`，
-使用具备包读取权限的凭据登录。不要把令牌写入命令文档、Dockerfile 或仓库。
+已发布地址：`ghcr.io/libinghuang1994/qwen35-cpu-dev:0.1.0`。
+2026-10-27 已使用空 Docker 认证配置，从 GHCR 成功拉取最终摘要镜像，当前无需登录。
+压缩层及配置共 300,746,659 字节，约 301 MB；云端构建记录的未压缩大小为
+822,786,763 字节，约 823 MB。Docker 使用不同存储后端时，实际占用和显示值可能不同。
+详细交付记录见 [release-0.1.0.json](release-0.1.0.json)。
 
 ```bash
 docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev:0.1.0
 docker run --rm --network none ghcr.io/libinghuang1994/qwen35-cpu-dev:0.1.0 verify-dev-env
 ```
+
+固定到本次构建产物可使用完整摘要：
+
+```bash
+docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev@sha256:2ef869c7ad4e4113e55d3cfaf9500de4a1d7b0c2553924b342e5623496108f4d
+```
+
+构建和发布均已通过：[GitHub Actions 运行记录](https://github.com/libinghuang1994/temp2/actions/runs/40472090532)。
 
 以下为开发容器示例，先将路径换成 Docker 服务端实际可访问的绝对目录：
 
