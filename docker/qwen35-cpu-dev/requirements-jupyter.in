@@ -1,0 +1,8 @@
+# Requested platform versions; the administrator's "ppack" typo is corrected.
+ipython==8.12.2
+notebook==6.5.2
+# Match the JupyterLab minor series to the available Chinese language pack.
+jupyterlab==4.5.11
+jupyterlab-language-pack-zh-CN==4.5.post3
+# Notebook 6.5.2 uses a traitlets API removed in 5.10 (jupyter/notebook#7048).
+traitlets==5.9.0

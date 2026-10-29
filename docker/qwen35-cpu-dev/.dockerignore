@@ -2,3 +2,7 @@
 !Dockerfile
 !apt-packages.txt
 !verify-dev-env.sh
+!Dockerfile.jupyter
+!requirements-jupyter.in
+!requirements-jupyter.txt
+!verify-jupyter-env.py

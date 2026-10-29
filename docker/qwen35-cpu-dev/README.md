@@ -11,11 +11,64 @@
 - Make、Ninja、Git、pkg-config、Python 3、curl、CA 证书。
 - OpenMP、OpenSSL、libcurl、NUMA 开发库及 numactl、ccache、GDB、ripgrep。
 
+## 0.2.0：内网平台所需的 Jupyter 依赖
+
+`0.2.0` 通过 [Dockerfile.jupyter](Dockerfile.jupyter) 继承已发布 `0.1.0` 的固定摘要，
+保留原 CPU 工具链，增加以下 Python 包和所需的全部传递依赖：
+
+| 包 | 固定版本 |
+|---|---|
+| IPython | 8.12.2（管理员指定） |
+| Notebook | 6.5.2（管理员指定） |
+| JupyterLab | 4.5.11 |
+| 简体中文语言包 `jupyterlab-language-pack-zh-CN` | 4.5.post3 |
+| traitlets | 5.9.0 |
+
+管理员命令里的 `jupyterlab-language-ppack-zh-CN` 多了一个 `p`，已按
+[Jupyter 官方说明](https://jupyterlab.readthedocs.io/en/stable/user/language.html)修正。
+固定 traitlets 5.9.0 是为了兼容 Notebook 6.5.2；上游问题见
+[jupyter/notebook#7048](https://github.com/jupyter/notebook/issues/7048)。
+JupyterLab 与中文包选择同一 4.5 系列；在 Settings → Language 中选择简体中文。
+
+直接依赖见 [requirements-jupyter.in](requirements-jupyter.in)，100 个解析后的包及其 wheel
+SHA-256 见 [requirements-jupyter.txt](requirements-jupyter.txt)。安装时启用 `--require-hashes`。
+pip 固定为 25.3；包安装到镜像默认 Python 3.10 环境，`pip`、`python3 -m pip` 与
+Python 内核使用该环境，无需在内网再执行 pip 安装。
+镜像内实际 Python 包清单在 `/usr/local/share/qwen35-cpu-dev/python-packages.txt`。
+
+拉取及断网验证命令：
+
+```bash
+docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0
+docker run --rm --network none ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0 verify-dev-env
+docker run --rm --network none ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0 verify-jupyter-env
+```
+
+`verify-jupyter-env` 检查依赖版本和中文翻译文件，实际执行一个 Python Notebook 单元，
+分别启动 JupyterLab 与 Notebook，验证带 token 的 `/api/status`、`/lab` 和 `/tree` 请求成功。
+测试服务只在验证容器内短暂运行，结束即关闭。
+
+平台可沿用管理员提供的启动命令；镜像保留 `/bin/bash` 默认命令，未添加固定 ENTRYPOINT，
+支持平台覆盖启动命令。Jupyter 可执行程序位于 `/usr/local/bin`，镜像声明端口 8888。
+如在独立 Docker 环境手动启动 JupyterLab，可执行：
+
+```bash
+docker run --rm -it --init \
+  -p 127.0.0.1:8888:8888 \
+  --mount type=bind,src=/绝对路径/工作目录,dst=/workspace \
+  ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0 \
+  jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+```
+
+将挂载路径替换为 Docker 服务端的真实目录。手动启动保留 Jupyter 自动生成的 token，
+从容器输出取得访问地址；平台的代理路径、认证、端口和挂载参数沿用平台配置。
+这次仅增加已知的软件依赖，目标内网平台仍需实际拉取和启动验收。
+
 系统包安装列表见 [apt-packages.txt](apt-packages.txt)。系统包从 Ubuntu 源解析，
 每次构建的实际版本保存在镜像内 `/usr/local/share/qwen35-cpu-dev/packages.tsv`。
 固定基础镜像和 CMake 不代表 apt 依赖的所有版本均被冻结；使用最终镜像摘要可以取得同一构建产物。
 
-## 内网使用
+## 0.1.0 历史发布记录与基础开发用法
 
 已发布地址：`ghcr.io/libinghuang1994/qwen35-cpu-dev:0.1.0`。
 2026-10-27 已使用空 Docker 认证配置，从 GHCR 成功拉取最终摘要镜像，当前无需登录。
@@ -63,20 +116,22 @@ AVX-512、AMX 测试对象仅编译，不执行，构建机器无需具备对应
 
 ## 构建与发布
 
-在仓库根目录可执行本地构建：
+在仓库根目录可构建当前的 Jupyter 版本：
 
 ```bash
 docker build --platform linux/amd64 \
-  --tag ghcr.io/libinghuang1994/qwen35-cpu-dev:0.1.0 \
+  --file docker/qwen35-cpu-dev/Dockerfile.jupyter \
+  --tag ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0 \
   docker/qwen35-cpu-dev
 ```
 
 GitHub Actions 的 `Build Qwen35 CPU development image` 工作流可手动触发，
 也会在 `main` 分支的 Dockerfile、依赖清单、验证脚本、构建上下文规则或工作流自身发生变化时触发。
-推送触发默认发布 `0.1.0`，手动触发可指定版本；后续正式更新时应同时调整默认版本。
+推送触发默认发布 `0.2.0`，手动触发可指定版本；后续正式更新时应同时调整默认版本。
+原始 [Dockerfile](Dockerfile) 保留为 `0.1.0` 基础工具链的构建配方；当前工作流使用 `Dockerfile.jupyter`。
 它在 `ubuntu-22.04` runner 构建 amd64 镜像，通过独立的离线容器验证后，
 使用工作流临时令牌的 `packages: write` 权限发布至当前仓库所属账号的 GHCR。
-工作流上传包版本清单、镜像信息和发布日志作为构建记录。
+工作流上传系统包及 Python 包版本清单、Jupyter 验证结果、镜像信息和发布日志作为构建记录。
 
 当前流程不自动改变包的可见性，不添加定时任务，也不包含服务器部署操作。
 

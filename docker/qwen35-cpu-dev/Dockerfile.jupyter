@@ -1,0 +1,44 @@
+# Extend the exact, previously published CPU toolchain image.
+FROM ghcr.io/libinghuang1994/qwen35-cpu-dev@sha256:2ef869c7ad4e4113e55d3cfaf9500de4a1d7b0c2553924b342e5623496108f4d
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG IMAGE_VERSION=0.2.0
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+
+LABEL org.opencontainers.image.title="Qwen3.5 CPU development environment with Jupyter" \
+      org.opencontainers.image.description="CPU development toolchain plus IPython 8.12.2, Notebook 6.5.2, JupyterLab and Simplified Chinese language pack" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3-pip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-jupyter.txt requirements-jupyter.in /usr/local/share/qwen35-cpu-dev/
+RUN python3 -m pip install --no-cache-dir pip==25.3 \
+    && python3 -m pip install --no-cache-dir --require-hashes \
+        -r /usr/local/share/qwen35-cpu-dev/requirements-jupyter.txt \
+    && python3 -m pip check \
+    && python3 -m pip freeze --all > /usr/local/share/qwen35-cpu-dev/python-packages.txt \
+    && cp /usr/local/share/qwen35-cpu-dev/build-info.txt \
+        /usr/local/share/qwen35-cpu-dev/base-build-info.txt \
+    && printf 'image_version=%s\nbuild_date=%s\nsource_revision=%s\nbase_image=%s\n' \
+        "${IMAGE_VERSION}" "${BUILD_DATE}" "${VCS_REF}" \
+        'ghcr.io/libinghuang1994/qwen35-cpu-dev@sha256:2ef869c7ad4e4113e55d3cfaf9500de4a1d7b0c2553924b342e5623496108f4d' \
+        > /usr/local/share/qwen35-cpu-dev/build-info.txt \
+    && dpkg-query --show --showformat='${binary:Package}\t${Version}\n' \
+        > /usr/local/share/qwen35-cpu-dev/packages.tsv
+
+COPY verify-jupyter-env.py /usr/local/bin/verify-jupyter-env
+RUN chmod 0755 /usr/local/bin/verify-jupyter-env \
+    && verify-dev-env > /usr/local/share/qwen35-cpu-dev/build-verification.log 2>&1 \
+    && cat /usr/local/share/qwen35-cpu-dev/build-verification.log \
+    && verify-jupyter-env > /usr/local/share/qwen35-cpu-dev/jupyter-verification.log 2>&1 \
+    && cat /usr/local/share/qwen35-cpu-dev/jupyter-verification.log
+
+EXPOSE 8888
+WORKDIR /workspace
+CMD ["/bin/bash"]

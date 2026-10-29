@@ -6,15 +6,19 @@ on:
     paths:
       - .github/workflows/qwen35-cpu-dev.yml
       - docker/qwen35-cpu-dev/Dockerfile
+      - docker/qwen35-cpu-dev/Dockerfile.jupyter
       - docker/qwen35-cpu-dev/apt-packages.txt
       - docker/qwen35-cpu-dev/verify-dev-env.sh
+      - docker/qwen35-cpu-dev/verify-jupyter-env.py
+      - docker/qwen35-cpu-dev/requirements-jupyter.in
+      - docker/qwen35-cpu-dev/requirements-jupyter.txt
       - docker/qwen35-cpu-dev/.dockerignore
   workflow_dispatch:
     inputs:
       version:
         description: Image version tag
         required: true
-        default: 0.1.0
+        default: 0.2.0
         type: string
 
 permissions:
@@ -38,7 +42,7 @@ jobs:
       - name: Build and verify
         id: build
         env:
-          IMAGE_VERSION: ${{ inputs.version || '0.1.0' }}
+          IMAGE_VERSION: ${{ inputs.version || '0.2.0' }}
           IMAGE_OWNER: ${{ github.repository_owner }}
         shell: bash
         run: |
@@ -46,14 +50,20 @@ jobs:
           [[ "$IMAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           image="ghcr.io/${IMAGE_OWNER,,}/qwen35-cpu-dev:${IMAGE_VERSION}"
           docker build --platform linux/amd64 \
+            --file docker/qwen35-cpu-dev/Dockerfile.jupyter \
             --build-arg "IMAGE_VERSION=$IMAGE_VERSION" \
             --build-arg "VCS_REF=$GITHUB_SHA" \
             --build-arg "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --tag "$image" docker/qwen35-cpu-dev
           docker run --rm --network none "$image" verify-dev-env
+          docker run --rm --network none "$image" verify-jupyter-env
           docker image inspect "$image" --format '{{json .}}' > image-info.json
           docker run --rm --network none "$image" \
             cat /usr/local/share/qwen35-cpu-dev/packages.tsv > packages.tsv
+          docker run --rm --network none "$image" \
+            cat /usr/local/share/qwen35-cpu-dev/python-packages.txt > python-packages.txt
+          docker run --rm --network none "$image" \
+            cat /usr/local/share/qwen35-cpu-dev/jupyter-verification.log > jupyter-verification.log
           echo "image=$image" >> "$GITHUB_OUTPUT"
 
       - name: Publish to GHCR
@@ -85,5 +95,7 @@ jobs:
           path: |
             image-info.json
             packages.tsv
+            python-packages.txt
+            jupyter-verification.log
             publish.log
           if-no-files-found: ignore
