@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "image": "ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0",
+  "manifest_digest": "sha256:e5a4a26394f87bf1c6c15fd2a4649828e15a5f2947cd9db8a34c82d755237dcd",
+  "config_digest": "sha256:3b3383a94df04264719a85f61de507a37f62985c9bdfb07aa75a057d6ba98a78",
+  "platform": "linux/amd64",
+  "source_repository": "https://github.com/libinghuang1994/temp2",
+  "source_revision": "d3bf430e510823a46dd450249317b05bb5809268",
+  "workflow_run": "https://github.com/libinghuang1994/temp2/actions/runs/40805092273",
+  "workflow_conclusion": "success",
+  "job_completed_at": "2026-10-29T02:16:19Z",
+  "base_image": "ghcr.io/libinghuang1994/qwen35-cpu-dev@sha256:2ef869c7ad4e4113e55d3cfaf9500de4a1d7b0c2553924b342e5623496108f4d",
+  "compressed_layers_and_config_bytes": 369301089,
+  "uncompressed_image_bytes_from_runner": 1062577099,
+  "python": "3.10.12",
+  "python_packages": {
+    "pip": "25.3",
+    "ipython": "8.12.2",
+    "notebook": "6.5.2",
+    "jupyterlab": "4.5.11",
+    "jupyterlab-language-pack-zh-CN": "4.5.post3",
+    "traitlets": "5.9.0",
+    "ipykernel": "7.3.0"
+  },
+  "locked_jupyter_packages": 100,
+  "requirements_sha256": "4da52366f8e4bddddc8efbb2db73ecf5cf4d99653b944fc849034edc0a411e67",
+  "default_command": [
+    "/bin/bash"
+  ],
+  "exposed_ports": [
+    "8888/tcp"
+  ],
+  "checks": {
+    "local_docker_build": "passed",
+    "local_offline_container_verification": "passed",
+    "github_actions_build_and_offline_verification": "passed",
+    "ghcr_push": "passed",
+    "anonymous_pull_by_digest": "passed",
+    "pip_dependency_check": "passed",
+    "pinned_package_versions": "passed",
+    "chinese_translation_files_installed": "passed",
+    "python_notebook_cell_execution": "passed",
+    "jupyterlab_authenticated_http_api_and_ui": "passed",
+    "notebook_authenticated_http_api_and_ui": "passed",
+    "cpp17_openmp_openssl_libcurl_runtime": "passed",
+    "avx512_vnni_intrinsics_compilation": "passed",
+    "amx_tile_int8_bf16_intrinsics_compilation": "passed",
+    "target_platform_startup": "not_verified",
+    "target_server_amx_execution": "not_verified",
+    "llama_cpp_build": "not_performed",
+    "model_and_api": "not_performed"
+  },
+  "verification_date": "2026-10-29"
+}

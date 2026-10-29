@@ -13,6 +13,12 @@
 
 ## 0.2.0：内网平台所需的 Jupyter 依赖
 
+已于 2026-10-29 [构建并发布成功](https://github.com/libinghuang1994/temp2/actions/runs/40805092273)，
+并使用空 Docker 认证配置按最终摘要完整拉取成功，当前可匿名下载。
+完整镜像的压缩层及配置共 369,301,089 字节，约 369 MB；云端记录未压缩大小为
+1,062,577,099 字节，约 1.06 GB。已有旧镜像时可以复用基础层；实际磁盘占用随 Docker
+存储后端变化。发布详情见 [release-0.2.0.json](release-0.2.0.json)。
+
 `0.2.0` 通过 [Dockerfile.jupyter](Dockerfile.jupyter) 继承已发布 `0.1.0` 的固定摘要，
 保留原 CPU 工具链，增加以下 Python 包和所需的全部传递依赖：
 
@@ -42,6 +48,12 @@ Python 内核使用该环境，无需在内网再执行 pip 安装。
 docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0
 docker run --rm --network none ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0 verify-dev-env
 docker run --rm --network none ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0 verify-jupyter-env
+```
+
+固定到本次已验证产物：
+
+```bash
+docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev@sha256:e5a4a26394f87bf1c6c15fd2a4649828e15a5f2947cd9db8a34c82d755237dcd
 ```
 
 `verify-jupyter-env` 检查依赖版本和中文翻译文件，实际执行一个 Python Notebook 单元，
