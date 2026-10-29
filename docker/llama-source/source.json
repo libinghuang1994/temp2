@@ -1,0 +1,14 @@
+{
+  "upstream_repository": "https://github.com/ggml-org/llama.cpp",
+  "upstream_tag": "v0.7.0",
+  "upstream_tag_object": "757cad021b357f417065ddbc41a6e8f87c1f8136",
+  "upstream_commit": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+  "archive_url": "https://codeload.github.com/ggml-org/llama.cpp/tar.gz/620d2225cc436ab0b001e3200e590e3b286ef9ab",
+  "archive_filename": "llama.cpp-v0.7.0.tar.gz",
+  "archive_sha256": "1d4a987d9bd048f6e93107e838026438df70fbde237fc0c69c63d600512b4bd9",
+  "archive_bytes": 38195486,
+  "archive_contains_git_history": false,
+  "upstream_archive_modified": false,
+  "export_adds_metadata_file": "SOURCE_PROVENANCE.json",
+  "base_image": "ghcr.io/libinghuang1994/qwen35-cpu-dev@sha256:e5a4a26394f87bf1c6c15fd2a4649828e15a5f2947cd9db8a34c82d755237dcd"
+}
