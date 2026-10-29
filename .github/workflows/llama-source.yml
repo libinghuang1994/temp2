@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: llama-source-publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-and-publish:
@@ -37,13 +37,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          image="ghcr.io/${IMAGE_OWNER,,}/qwen35-cpu-dev:0.2.0-llama-src-v0.7.0"
+          image="ghcr.io/${IMAGE_OWNER,,}/qwen35-cpu-dev:llama-src-v0.7.0"
+          verification_image="llama-source-verification:local"
+          docker build --platform linux/amd64 \
+            --file docker/llama-source/Dockerfile \
+            --build-arg "VCS_REF=$GITHUB_SHA" \
+            --target verification --tag "$verification_image" docker/llama-source
           docker build --platform linux/amd64 \
             --file docker/llama-source/Dockerfile \
             --build-arg "VCS_REF=$GITHUB_SHA" \
             --tag "$image" docker/llama-source
-          docker run --rm --network none "$image" verify-llama-source 2>&1 | tee source-verification.log
-          docker run --rm --network none "$image" verify-jupyter-env 2>&1 | tee jupyter-verification.log
+          mkdir exported-source
+          source_container=$(docker create "$image" /source-data-only)
+          trap 'docker rm "$source_container" >/dev/null' EXIT
+          docker cp "$source_container:/opt/llama-source/." ./exported-source/
+          docker run --rm --network none \
+            --mount "type=bind,src=$PWD/exported-source,dst=/opt/llama-source,readonly" \
+            "$verification_image" verify-llama-source 2>&1 | tee source-verification.log
+          docker run --rm --network none \
+            --mount "type=bind,src=$PWD/exported-source,dst=/bundle,readonly" \
+            "$verification_image" bash -euc '
+              bash /bundle/export-llama-source.sh /tmp/exported-source
+              if bash /bundle/export-llama-source.sh /tmp/exported-source; then exit 1; fi
+              test -s /tmp/exported-source/LICENSE
+              printf "PASS: copied source bundle exported; existing destination preserved\n"
+            ' 2>&1 | tee export-verification.log
           docker image inspect "$image" --format '{{json .}}' > image-info.json
           echo "image=$image" >> "$GITHUB_OUTPUT"
 
@@ -75,7 +93,7 @@ jobs:
           name: llama-source-build-records
           path: |
             source-verification.log
-            jupyter-verification.log
+            export-verification.log
             image-info.json
             publish.log
           if-no-files-found: ignore

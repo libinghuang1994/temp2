@@ -12,7 +12,12 @@ if [[ -z "$destination" || -e "$destination" || -L "$destination" ]]; then
     exit 2
 fi
 
-bundle=/opt/llama-source
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+if [[ -f "$script_dir/SHA256SUMS" ]]; then
+    bundle=$script_dir
+else
+    bundle=/opt/llama-source
+fi
 (cd "$bundle" && sha256sum --check --strict SHA256SUMS)
 
 parent=$(dirname -- "$destination")

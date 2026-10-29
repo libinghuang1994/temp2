@@ -4,61 +4,66 @@
 
 | 内容 | 固定值 |
 |---|---|
-| 分发标签 | `ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0-llama-src-v0.7.0` |
-| 开发环境 | 原 `0.2.0` 的固定摘要，保留工具链与 Jupyter |
+| 分发标签 | `ghcr.io/libinghuang1994/qwen35-cpu-dev:llama-src-v0.7.0` |
+| 镜像内容 | 基于 scratch，仅包含源码归档、来源记录、许可证和导出脚本 |
+| 编译验证环境 | 原 `0.2.0` 的固定摘要，工具链与 Jupyter 不进入最终源码镜像 |
 | 上游版本 | `ggml-org/llama.cpp` 的 `v0.7.0` |
 | 完整源码提交 | `620d2225cc436ab0b001e3200e590e3b286ef9ab` |
 | 原始源码归档大小 | 38,195,486 字节，约 38.2 MB |
 | 原始源码归档 SHA-256 | `1d4a987d9bd048f6e93107e838026438df70fbde237fc0c69c63d600512b4bd9` |
 
-镜像继承原 `0.2.0` 的层，仅增加源码归档、来源记录和导出/验证脚本。源码原始归档与许可证保留，归档不含 `.git` 历史。导出时增加 `SOURCE_PROVENANCE.json` 记录来源。镜像不包含模型或编译后的 llama.cpp 程序。
+源码原始归档与许可证保留，归档不含 `.git` 历史。导出时增加 `SOURCE_PROVENANCE.json` 记录来源。最终镜像不包含开发环境、模型或编译后的 llama.cpp 程序。
 
-默认命令仍为 `/bin/bash`，没有固定 ENTRYPOINT，继承 Jupyter 依赖和端口声明。平台可沿用原 `0.2.0` 的启动命令、认证与代理配置。
+这是用于 `docker create` / `docker cp` 的数据镜像，不作为开发容器启动。原版 `0.2.0` 开发镜像及已经启动的容器继续使用。
 
-## 通过平台界面导入
+## 本地拉取，交由管理员导入
 
-1. 使用上表的分发标签，在平台创建一个源码开发容器；挂载用户确认的持久化工作目录。
-2. 在新容器中，把源码导出到该持久化目录的新子目录。下面的路径需替换为实际挂载路径：
-
-```bash
-export-llama-source /持久化项目目录/src/llama.cpp-v0.7.0
-```
-
-导出目标必须不存在，脚本会校验归档并拒绝覆盖现有目录。解包后约占 181 MiB，实际磁盘分配随文件系统变化。
-
-导出完成后，源码可由任何挂载了同一目录的原版 `0.2.0` 开发容器使用。后续修改和双配置编译都使用这份独立源码，不需要重新制作镜像。也可继续在新容器中开发。
-
-## 有 Docker 终端时导出到本地目录
-
-此方法要求当前终端能够访问 Docker 服务。`docker cp` 的目标目录属于运行命令的当前终端，因此适用于把源码从镜像复制到现有工作环境。
+在能拉取 GHCR 镜像的本地终端执行：
 
 ```bash
-docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0-llama-src-v0.7.0
+docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev:llama-src-v0.7.0
+docker save --output llama-src-v0.7.0.tar ghcr.io/libinghuang1994/qwen35-cpu-dev:llama-src-v0.7.0
 ```
 
-在确认的项目目录中执行以下命令，归档会写入新建的 `llama-source-bundle` 子目录：
+将 `llama-src-v0.7.0.tar` 交给管理员，管理员导入：
+
+```bash
+docker load --input llama-src-v0.7.0.tar
+```
+
+随后按下一节提取源码包，再将包目录交付到现有开发容器的持久化项目目录。
+
+## 从源码镜像提取文件
+
+在可访问 Docker 服务的 Bash 终端执行，可在本地完成，也可由管理员在服务器完成。归档会写入新建的 `llama-source-bundle` 子目录：
 
 ```bash
 (
     set -euo pipefail
     mkdir llama-source-bundle
-    source_container=$(docker create ghcr.io/libinghuang1994/qwen35-cpu-dev:0.2.0-llama-src-v0.7.0)
+    source_container=$(docker create ghcr.io/libinghuang1994/qwen35-cpu-dev:llama-src-v0.7.0 /source-data-only)
     trap 'docker rm "$source_container" >/dev/null' EXIT
     docker cp "$source_container:/opt/llama-source/." ./llama-source-bundle/
     cd llama-source-bundle
     sha256sum --check --strict SHA256SUMS
-    mkdir llama.cpp-v0.7.0
-    tar -xzf llama.cpp-v0.7.0.tar.gz --directory llama.cpp-v0.7.0 \
-        --strip-components=1 --no-same-owner
-    cp source.json llama.cpp-v0.7.0/SOURCE_PROVENANCE.json
 )
 ```
 
-这里使用 `docker create` 和 `docker cp`，不启动测试服务。保留已复制的源码归档和校验记录即可。
+`/source-data-only` 仅用于创建停止状态的容器，命令不会执行。这个镜像没有可运行的 shell，也无需启动进程。
+
+## 在现有开发容器中解包
+
+将 `llama-source-bundle` 放在已确认的持久化目录中，进入该目录后执行：
+
+```bash
+bash ./export-llama-source.sh "$PWD/llama.cpp-v0.7.0"
+```
+
+导出目标必须不存在，脚本会校验归档并拒绝覆盖现有目录。原始归档解包后约占 181 MiB，实际磁盘分配随文件系统变化。后续修改和双配置编译使用这份独立源码，不需要重新制作镜像。
 
 ## 离线编译验证范围
 
-发布流程使用 `--network none` 执行 `verify-llama-source`，导出并编译 `llama-cli`、`llama-server` 和 `llama-bench`，检查三者 `--help` 能运行；另行执行 Jupyter 验证。外部通用 CPU 编译验证不启用 AVX-512/AMX 专用路径。
+发布流程先从最终数据镜像提取源码包，再挂载到独立的开发验证镜像中，使用 `--network none` 执行 `verify-llama-source`，导出并编译 `llama-cli`、`llama-server` 和 `llama-bench`，检查三者 `--help` 能运行；另行检查复制出来的导出脚本及覆盖保护。外部 CPU 编译验证不启用 AVX-512/AMX 专用路径。
 
 为避免内网编译时自动下载网页资源，此次离线验证使用该版本实际支持的参数：
 
