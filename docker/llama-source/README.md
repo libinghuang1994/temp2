@@ -2,9 +2,12 @@
 
 用于通过已有 GHCR 通道把固定版本源码送入内网，再导出到独立工作目录中修改和编译。
 
+2026-10-29 [构建发布成功](https://github.com/libinghuang1994/temp2/actions/runs/40828155430)，已用空 Docker 认证配置按最终摘要匿名完整拉取，且通过 `docker save` / `docker load` 验证。压缩镜像层及配置共 37,656,801 字节，约 37.7 MB；本地导出文件为 37,665,280 字节，不同 Docker 版本的导出文件可能不同。详见 [发布记录](release-v0.7.0.json)。
+
 | 内容 | 固定值 |
 |---|---|
 | 分发标签 | `ghcr.io/libinghuang1994/qwen35-cpu-dev:llama-src-v0.7.0` |
+| 固定镜像摘要 | `sha256:088c89e1520e813b8c2e10918f85078bd0cbe86844592594749eca75576fcc24` |
 | 镜像内容 | 基于 scratch，仅包含源码归档、来源记录、许可证和导出脚本 |
 | 编译验证环境 | 原 `0.2.0` 的固定摘要，工具链与 Jupyter 不进入最终源码镜像 |
 | 上游版本 | `ggml-org/llama.cpp` 的 `v0.7.0` |
