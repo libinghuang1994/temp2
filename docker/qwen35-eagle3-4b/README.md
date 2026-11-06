@@ -2,7 +2,11 @@
 
 镜像：`ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1`。
 
-沿用此前 `llama-src-v0.7.0` 的 GHCR 仓库，以 scratch 数据镜像分发；不需要替换现有开发容器。镜像内目录为 `/opt/qwen35-eagle3-4b`。原始 BF16 权重约 466 MB，F16 GGUF 约 480 MB，另附主模型 tokenizer、固定转换器源码归档、转换修正、许可证、来源和校验记录。完整大小和不可变镜像摘要见发布后的 `release-v1.json`。
+2026-11-06 [构建发布成功](https://github.com/libinghuang1994/temp2/actions/runs/42148844449)，已完成匿名下载全部镜像层并核对摘要。压缩镜像层及配置共 764,733,606 字节，约 765 MB；解包约 995 MB。云端 `docker save/load`、镜像内文件提取和覆盖保护均通过，详见[发布记录](release-v1.json)。
+
+固定镜像摘要为 `sha256:50a4f18e786aec5c9ffedc07403585fe251ba74638b72b9142c8e902bfa4d3e4`。
+
+沿用此前 `llama-src-v0.7.0` 的 GHCR 仓库，以 scratch 数据镜像分发；不需要替换现有开发容器。镜像内目录为 `/opt/qwen35-eagle3-4b`。原始 BF16 权重约 466 MB，F16 GGUF 为 477,099,552 字节，约 477 MB，另附主模型 tokenizer、固定转换器源码归档、转换修正、许可证、来源和校验记录。
 
 ## 下载和内网交付
 
@@ -12,6 +16,15 @@
 docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1
 docker save --output qwen35-4b-eagle3-v1.tar ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1
 ```
+
+也可按固定摘要拉取，并给它加上分发标签后再执行上面的 `docker save`：
+
+```bash
+docker pull --platform linux/amd64 ghcr.io/libinghuang1994/qwen35-cpu-dev@sha256:50a4f18e786aec5c9ffedc07403585fe251ba74638b72b9142c8e902bfa4d3e4
+docker tag ghcr.io/libinghuang1994/qwen35-cpu-dev@sha256:50a4f18e786aec5c9ffedc07403585fe251ba74638b72b9142c8e902bfa4d3e4 ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1
+```
+
+云端导出 tar 约 995 MB；不同 Docker 版本、存储后端可能导出不同的 tar 字节和大小，以镜像摘要及提取后的 `SHA256SUMS` 为准。
 
 将 tar 交给管理员；在有 Docker 的机器导入并提取：
 
