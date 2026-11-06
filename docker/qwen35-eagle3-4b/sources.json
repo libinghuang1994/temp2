@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "draft_repository": "yuyijiong/Qwen3.5-4B-Eagle3",
+  "draft_revision": "f33c6e5e4fbfff68e8374a7eafebfd420fb37109",
+  "target_repository": "Qwen/Qwen3.5-4B",
+  "target_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "llama_revision": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+  "converter_original_sha256": "6739a507a74d54a0fb884374da57f6f7844495f233cd1a4d9183cf1a15577eb2",
+  "files": [
+    {
+      "path": "original/config.json",
+      "url": "https://huggingface.co/yuyijiong/Qwen3.5-4B-Eagle3/resolve/f33c6e5e4fbfff68e8374a7eafebfd420fb37109/config.json",
+      "bytes": 1007,
+      "sha256": "212d1922aafb9b28b0d855e7e04c825c898d5ada6c87a941bcc42b92472bd4e5"
+    },
+    {
+      "path": "original/README.md",
+      "url": "https://huggingface.co/yuyijiong/Qwen3.5-4B-Eagle3/resolve/f33c6e5e4fbfff68e8374a7eafebfd420fb37109/README.md",
+      "bytes": 3227,
+      "sha256": "41064612b199c25c42d40bc3cee959168b68e2b3b459caa4bac6e7d1777b70a2"
+    },
+    {
+      "path": "original/model.safetensors",
+      "url": "https://huggingface.co/yuyijiong/Qwen3.5-4B-Eagle3/resolve/f33c6e5e4fbfff68e8374a7eafebfd420fb37109/model.safetensors",
+      "bytes": 466385472,
+      "sha256": "3de3a9711bee96f571759a36d3becf22a45e012006401ae7ca47be796b0df29b"
+    },
+    {
+      "path": "target-tokenizer/config.json",
+      "url": "https://huggingface.co/Qwen/Qwen3.5-4B/resolve/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a/config.json",
+      "bytes": 3161,
+      "sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670"
+    },
+    {
+      "path": "target-tokenizer/tokenizer.json",
+      "url": "https://huggingface.co/Qwen/Qwen3.5-4B/resolve/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a/tokenizer.json",
+      "bytes": 12807982,
+      "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    },
+    {
+      "path": "target-tokenizer/tokenizer_config.json",
+      "url": "https://huggingface.co/Qwen/Qwen3.5-4B/resolve/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a/tokenizer_config.json",
+      "bytes": 16710,
+      "sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8"
+    },
+    {
+      "path": "target-tokenizer/chat_template.jinja",
+      "url": "https://huggingface.co/Qwen/Qwen3.5-4B/resolve/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a/chat_template.jinja",
+      "bytes": 7756,
+      "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+    },
+    {
+      "path": "LICENSE",
+      "url": "https://huggingface.co/Qwen/Qwen3.5-4B/resolve/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a/LICENSE",
+      "bytes": 11544,
+      "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+    },
+    {
+      "path": "converter/llama.cpp-v0.7.0.tar.gz",
+      "url": "https://codeload.github.com/ggml-org/llama.cpp/tar.gz/620d2225cc436ab0b001e3200e590e3b286ef9ab",
+      "bytes": 38195486,
+      "sha256": "1d4a987d9bd048f6e93107e838026438df70fbde237fc0c69c63d600512b4bd9"
+    }
+  ],
+  "converter_patched_sha256": "eaf13fe97bd7071ef0470ef38d7fee40759c5ba522a6a88162487c59bc711147",
+  "gguf_sha256": "1b76f2f3af3e9ce4fc7d240ff82b10ee9885fdd080390d1c3de0532ec292bf62",
+  "gguf_bytes": 477099552
+}

@@ -1,0 +1,107 @@
+name: Publish Qwen3.5-4B paired EAGLE3 head
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/qwen35-eagle3-head.yml
+      - docker/qwen35-eagle3-4b/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qwen35-eagle3-head-publish
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up conversion Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Download, convert, and verify on CPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -r docker/qwen35-eagle3-4b/requirements.txt
+          python docker/qwen35-eagle3-4b/prepare-bundle.py --work-dir "$RUNNER_TEMP/eagle3-package" --jobs 2
+
+      - name: Build and verify final data image
+        env:
+          IMAGE_OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${IMAGE_OWNER,,}/qwen35-cpu-dev:eagle3-qwen35-4b-v1"
+          docker build --platform linux/amd64 --provenance=false \
+            --file docker/qwen35-eagle3-4b/Dockerfile \
+            --build-arg "VCS_REF=$GITHUB_SHA" \
+            --tag "$image" "$RUNNER_TEMP/eagle3-package"
+          mkdir "$RUNNER_TEMP/extracted-head"
+          head_container=$(docker create "$image" /data-only)
+          trap 'docker rm "$head_container" >/dev/null' EXIT
+          docker cp "$head_container:/opt/qwen35-eagle3-4b/." "$RUNNER_TEMP/extracted-head/"
+          bash "$RUNNER_TEMP/extracted-head/export-head.sh" "$RUNNER_TEMP/exported-head" > final-export.log
+          if bash "$RUNNER_TEMP/extracted-head/export-head.sh" "$RUNNER_TEMP/exported-head"; then exit 1; fi
+          docker save --output "$RUNNER_TEMP/qwen35-4b-eagle3-v1.tar" "$image"
+          docker load --input "$RUNNER_TEMP/qwen35-4b-eagle3-v1.tar"
+          sha256sum "$RUNNER_TEMP/qwen35-4b-eagle3-v1.tar" > save-sha256.txt
+          stat --format='%s' "$RUNNER_TEMP/qwen35-4b-eagle3-v1.tar" > save-bytes.txt
+          docker image inspect "$image" --format '{{json .}}' > image-info.json
+
+      - name: Publish to existing GHCR package
+        id: publish
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${IMAGE_OWNER,,}/qwen35-cpu-dev:eagle3-qwen35-4b-v1"
+          docker_config_dir=$(mktemp -d)
+          export DOCKER_CONFIG="$docker_config_dir"
+          trap 'rm -rf -- "$docker_config_dir"' EXIT
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$IMAGE_OWNER" --password-stdin
+          docker push "$image" 2>&1 | tee publish.log
+          digest=$(sed -n 's/.*digest: \(sha256:[0-9a-f]*\).*/\1/p' publish.log | tail -n 1)
+          test ${#digest} -eq 71
+          echo "reference=${image%:*}@$digest" >> "$GITHUB_OUTPUT"
+          printf 'Image: `%s`\n\nDigest: `%s`\n' "$image" "$digest" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify anonymous complete download
+        env:
+          IMAGE_REFERENCE: ${{ steps.publish.outputs.reference }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python docker/qwen35-eagle3-4b/verify-registry.py "$IMAGE_REFERENCE" registry-verification
+
+      - name: Upload publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: qwen35-eagle3-head-records
+          path: |
+            ${{ runner.temp }}/eagle3-package/bundle/PROVENANCE.json
+            ${{ runner.temp }}/eagle3-package/bundle/SHA256SUMS
+            ${{ runner.temp }}/eagle3-package/bundle/verification/*.log
+            ${{ runner.temp }}/eagle3-package/bundle/verification/*.json
+            final-export.log
+            save-sha256.txt
+            save-bytes.txt
+            image-info.json
+            publish.log
+            registry-verification/*.json
+          if-no-files-found: ignore
