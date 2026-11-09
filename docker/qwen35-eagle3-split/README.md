@@ -4,17 +4,24 @@
 
 这是 AICR 当前故障的分发绕行方案，300 MiB 限制尚未确认。四份集齐后恢复原镜像中的全部文件，含原始 BF16、F16 GGUF、tokenizer、转换器、许可证和验证记录；不会重新转换或修改模型。恢复产物为文件目录，无须重新 `docker load` 大镜像。
 
-发布状态：构建和验证中，最终状态及每份固定摘要将记录在 `release-200m-v1.json`。
+2026-11-09 [发布成功](https://github.com/libinghuang1994/temp2/actions/runs/42550931041)。已从最终四个镜像提取并恢复全部原版文件，校验和导出通过；四个镜像也都完成匿名完整下载、大小和 SHA256 校验。固定摘要及证据见[发布记录](release-200m-v1.json)。尚未访问内网 AICR，也未验证其新标签同步和拉取。
+
+| tag 后缀（前缀为 `eagle3-qwen35-4b-v1-200m-`） | 实际压缩层字节数 | MiB |
+|---|---:|---:|
+| `part01` | 209,779,099 | 200.061 |
+| `part02` | 209,753,782 | 200.037 |
+| `part03` | 209,781,486 | 200.063 |
+| `part04` | 135,629,099 | 129.346 |
 
 ## 1. 按批次拉取
 
-沿用原有镜像路径，仅更换 tag。在能使用 Docker、能拉取 AICR 镜像的机器上逐条执行；也可每次只执行一条：
+沿用原有镜像路径，仅更换 tag。在能使用 Docker、能拉取 AICR 镜像的机器上，将示例 `aicr.xxx.com` 换为原来的 AICR 域名后逐条执行；也可每次只执行一条：
 
 ```bash
-docker pull --platform linux/amd64 aicr.byd.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part01
-docker pull --platform linux/amd64 aicr.byd.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part02
-docker pull --platform linux/amd64 aicr.byd.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part03
-docker pull --platform linux/amd64 aicr.byd.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part04
+docker pull --platform linux/amd64 aicr.xxx.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part01
+docker pull --platform linux/amd64 aicr.xxx.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part02
+docker pull --platform linux/amd64 aicr.xxx.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part03
+docker pull --platform linux/amd64 aicr.xxx.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part04
 ```
 
 外网来源是相同仓库与 tag：`ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part01` 至 `part04`。目标 AICR 是否已同步新 tag，需要内网验证；出现 `manifest unknown` 时，请管理员按完整名称同步这四个新 tag。
@@ -23,7 +30,7 @@ docker pull --platform linux/amd64 aicr.byd.com/ghcr.io/libinghuang1994/qwen35-c
 
 ## 2. 提取四份到同一个目录
 
-在四份均已拉取的机器执行。`docker create` 只创建停止状态的容器，不执行 `/data-only`；`docker cp` 可读取停止容器，见 [Docker 文档](https://docs.docker.com/reference/cli/docker/container/cp/)。
+在四份均已拉取的机器执行，同样先替换示例 AICR 域名。`docker create` 只创建停止状态的容器，不执行 `/data-only`；`docker cp` 可读取停止容器，见 [Docker 文档](https://docs.docker.com/reference/cli/docker/container/cp/)。
 
 ```bash
 (
@@ -32,7 +39,7 @@ docker pull --platform linux/amd64 aicr.byd.com/ghcr.io/libinghuang1994/qwen35-c
     part_container=''
     trap 'if test -n "$part_container"; then docker rm "$part_container" >/dev/null; fi' EXIT
     for part in 01 02 03 04; do
-        image="aicr.byd.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part${part}"
+        image="aicr.xxx.com/ghcr.io/libinghuang1994/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part${part}"
         part_container=$(docker create "$image" /data-only)
         docker cp "$part_container:/opt/qwen35-eagle3-split/." ./qwen35-eagle3-parts/
         docker rm "$part_container" >/dev/null
