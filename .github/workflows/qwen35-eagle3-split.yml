@@ -1,0 +1,100 @@
+name: Publish Qwen3.5 EAGLE3 small download parts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/qwen35-eagle3-split.yml
+      - docker/qwen35-eagle3-split/prepare.py
+      - docker/qwen35-eagle3-split/Dockerfile
+      - docker/qwen35-eagle3-split/reassemble.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qwen35-eagle3-split-publish
+  cancel-in-progress: false
+
+jobs:
+  split-and-publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Download verified original layer and split at 200 MiB
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 docker/qwen35-eagle3-split/prepare.py --work-dir "$RUNNER_TEMP/eagle3-split"
+
+      - name: Build four independent images and verify round trip
+        env:
+          IMAGE_OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/collected-parts"
+          for part in 01 02 03 04; do
+            image="ghcr.io/${IMAGE_OWNER,,}/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part${part}"
+            docker build --platform linux/amd64 --provenance=false \
+              --file docker/qwen35-eagle3-split/Dockerfile \
+              --build-arg "VCS_REF=$GITHUB_SHA" --build-arg "PART_NUMBER=$part" \
+              --tag "$image" "$RUNNER_TEMP/eagle3-split/part${part}"
+            part_container=$(docker create "$image" /data-only)
+            docker cp "$part_container:/opt/qwen35-eagle3-split/." "$RUNNER_TEMP/collected-parts/"
+            docker rm "$part_container" >/dev/null
+          done
+          bash "$RUNNER_TEMP/collected-parts/reassemble.sh" "$RUNNER_TEMP/restored-root" | tee round-trip.log
+          bash "$RUNNER_TEMP/restored-root/opt/qwen35-eagle3-4b/export-head.sh" "$RUNNER_TEMP/exported-head" > final-export.log
+          if bash "$RUNNER_TEMP/collected-parts/reassemble.sh" "$RUNNER_TEMP/restored-root"; then
+            echo 'Overwrite protection failed' >&2
+            exit 1
+          fi
+
+      - name: Publish four tags and verify all anonymous blobs are below 201 MiB
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker_config_dir=$(mktemp -d)
+          export DOCKER_CONFIG="$docker_config_dir"
+          trap 'rm -rf -- "$docker_config_dir"' EXIT
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$IMAGE_OWNER" --password-stdin
+          mkdir -p publication
+          cp "$RUNNER_TEMP/eagle3-split/split-record.json" publication/
+          for part in 01 02 03 04; do
+            image="ghcr.io/${IMAGE_OWNER,,}/qwen35-cpu-dev:eagle3-qwen35-4b-v1-200m-part${part}"
+            docker push "$image" 2>&1 | tee "publication/push-part${part}.log"
+            digest=$(sed -n 's/.*digest: \(sha256:[0-9a-f]*\).*/\1/p' "publication/push-part${part}.log" | tail -n 1)
+            test ${#digest} -eq 71
+            python3 docker/qwen35-eagle3-4b/verify-registry.py "${image%:*}@$digest" "publication/part${part}"
+            python3 - "publication/part${part}" <<'PY'
+          import json, sys
+          from pathlib import Path
+          root = Path(sys.argv[1])
+          manifest = json.loads((root / 'manifest.json').read_text())
+          if len(manifest['layers']) != 1 or any(x['size'] >= 201 * 1024 * 1024 for x in [manifest['config'], *manifest['layers']]):
+              raise SystemExit('Unexpected layer count or compressed blob size')
+          PY
+            printf 'Image: `%s`\n\nDigest: `%s`\n\n' "$image" "$digest" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: qwen35-eagle3-split-records
+          path: |
+            publication/
+            round-trip.log
+            final-export.log
+          if-no-files-found: ignore
